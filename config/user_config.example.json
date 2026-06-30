@@ -1,0 +1,12 @@
+{
+  "openai_api_key": "",
+  "openai_base_url": "",
+  "openai_model": "qwen-plus",
+  "zotero_library_id": "",
+  "zotero_library_type": "user",
+  "zotero_api_key": "",
+  "obsidian_vault_path": "",
+  "obsidian_literature_folder": "Literature Notes",
+  "app_database_path": "./data/literature_agent.db",
+  "default_start_year": 2026
+}
