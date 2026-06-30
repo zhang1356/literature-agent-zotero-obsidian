@@ -15,6 +15,7 @@ from services.connection_tests import (
     test_obsidian_path,
     test_zotero_connection,
 )
+from services.local_status import check_local_environment
 from services.sync_service import SyncService
 from ui.components import render_hero, render_stat_cards
 from ui.theme import apply_theme, get_recommendation_badge, get_status_badge
@@ -161,7 +162,11 @@ def zotero_item_title(item: dict) -> str:
     return item.get("data", {}).get("title") or item.get("title") or "(无标题)"
 
 
-def render_sidebar(active_settings, sqlite_message: str) -> None:
+def status_icon(ok: bool) -> str:
+    return "✅" if ok else "⚠️"
+
+
+def render_sidebar(active_settings, sqlite_message: str, local_status: dict) -> None:
     st.sidebar.markdown("### 配置状态")
     st.sidebar.markdown(
         " ".join(
@@ -176,6 +181,19 @@ def render_sidebar(active_settings, sqlite_message: str) -> None:
     )
     st.sidebar.markdown('<div class="la-divider"></div>', unsafe_allow_html=True)
     st.sidebar.caption("API Key 仅显示配置状态，不会在页面明文展示。")
+    st.sidebar.markdown("### 本地状态检查")
+    checks = local_status["checks"]
+    status_rows = [
+        ("本地配置", checks["config_user"]["ok"], checks["config_user"]["message"]),
+        ("Obsidian Vault", checks["obsidian"]["ok"], checks["obsidian"]["message"]),
+        ("Zotero", checks["zotero"]["ok"], checks["zotero"]["message"]),
+        ("模型 API", checks["model_api"]["ok"], checks["model_api"]["message"]),
+        ("数据库", sqlite_message == "已连接", "可用" if sqlite_message == "已连接" else "不可用"),
+        ("日志目录", checks["logs_dir"]["ok"], checks["logs_dir"]["message"]),
+        ("当前检索起始年份", True, checks["default_start_year"]["message"]),
+    ]
+    for label, ok, message in status_rows:
+        st.sidebar.caption(f"{status_icon(ok)} {label}：{message}")
 
 
 def should_show_first_use_guide(active_settings) -> bool:
@@ -208,6 +226,18 @@ def render_first_use_guide(active_settings) -> None:
         """,
         unsafe_allow_html=True,
     )
+
+
+def render_local_status_panel(local_status: dict) -> None:
+    warnings = local_status.get("warnings", [])
+    if not warnings:
+        return
+    st.markdown(
+        '<div class="la-card-title">本地状态检查</div>',
+        unsafe_allow_html=True,
+    )
+    for warning in warnings:
+        st.warning(warning)
 
 
 def render_search_tab(active_settings) -> None:
@@ -560,9 +590,11 @@ def render_settings_tab(active_settings) -> None:
 
 
 sqlite_ok, sqlite_message = sqlite_status()
+local_status = check_local_environment(settings)
 render_hero()
 render_first_use_guide(settings)
-render_sidebar(settings, sqlite_message)
+render_local_status_panel(local_status)
+render_sidebar(settings, sqlite_message, local_status)
 
 tab_search, tab_saved, tab_settings = st.tabs(["文献检索", "已保存文献", "系统设置"])
 

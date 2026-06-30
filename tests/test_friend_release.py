@@ -23,8 +23,10 @@ def test_obsidian_path_detection_writes_and_cleans_temp_file(tmp_path):
 
     assert ok is True
     assert message == "Obsidian 路径可用。"
-    literature_dir = tmp_path / "Literature Notes"
+    literature_dir = tmp_path / "AI-Literature-Agent" / "Inbox"
     assert literature_dir.exists()
+    assert (tmp_path / "AI-Literature-Agent" / "Analyzed").exists()
+    assert (tmp_path / "AI-Literature-Agent" / "Logs").exists()
     assert list(literature_dir.glob(".literature_agent_test_*.tmp")) == []
 
 

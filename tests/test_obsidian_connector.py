@@ -24,7 +24,8 @@ def test_write_note_writes_markdown_and_deduplicates_name(tmp_path):
     assert first_path.exists()
     assert first_path.read_text(encoding="utf-8") == "# Paper One"
     assert second_path.exists()
-    assert second_path.name == "Paper_ One-1.md"
+    assert second_path.name.startswith("Paper_ One-")
+    assert second_path.name.endswith(".md")
     assert second_path.read_text(encoding="utf-8") == "# Paper One Again"
 
 

@@ -6,6 +6,12 @@ from pathlib import Path
 import httpx
 
 from config import Settings
+from connectors.obsidian_connector import (
+    LOCAL_ANALYZED_FOLDER,
+    LOCAL_BASE_FOLDER,
+    LOCAL_INBOX_FOLDER,
+    LOCAL_LOGS_FOLDER,
+)
 from connectors.zotero_connector import ZoteroConnector
 from logger import get_logger
 
@@ -38,7 +44,10 @@ def test_obsidian_path(vault_path: str, literature_folder: str) -> tuple[bool, s
 
     test_file: Path | None = None
     try:
-        literature_dir = root / (literature_folder.strip() or "Literature Notes")
+        base_dir = root / LOCAL_BASE_FOLDER
+        literature_dir = base_dir / LOCAL_INBOX_FOLDER
+        (base_dir / LOCAL_ANALYZED_FOLDER).mkdir(parents=True, exist_ok=True)
+        (base_dir / LOCAL_LOGS_FOLDER).mkdir(parents=True, exist_ok=True)
         literature_dir.mkdir(parents=True, exist_ok=True)
         test_file = literature_dir / f".literature_agent_test_{uuid.uuid4().hex}.tmp"
         test_file.write_text("ok", encoding="utf-8")

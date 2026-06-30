@@ -12,6 +12,15 @@ load_dotenv()
 CONFIG_DIR = Path("config")
 USER_CONFIG_PATH = CONFIG_DIR / "user_config.json"
 DEFAULT_START_YEAR = 2026
+REQUIRED_USER_CONFIG_FIELDS = [
+    "openai_api_key",
+    "openai_base_url",
+    "openai_model",
+    "zotero_library_id",
+    "zotero_library_type",
+    "zotero_api_key",
+    "obsidian_vault_path",
+]
 
 DEFAULT_VALUES = {
     "openai_api_key": "",
@@ -21,7 +30,7 @@ DEFAULT_VALUES = {
     "zotero_library_type": "user",
     "zotero_api_key": "",
     "obsidian_vault_path": "",
-    "obsidian_literature_folder": "Literature Notes",
+    "obsidian_literature_folder": "AI-Literature-Agent/Inbox",
     "app_database_path": "./data/literature_agent.db",
     "default_start_year": DEFAULT_START_YEAR,
 }
@@ -50,7 +59,7 @@ class Settings(BaseModel):
     zotero_api_key: str = ""
 
     obsidian_vault_path: str = ""
-    obsidian_literature_folder: str = "Literature Notes"
+    obsidian_literature_folder: str = "AI-Literature-Agent/Inbox"
 
     app_database_path: str = "./data/literature_agent.db"
     default_start_year: int = DEFAULT_START_YEAR
@@ -90,6 +99,46 @@ def load_user_config(path: Path | None = None) -> dict:
     if not isinstance(data, dict):
         raise ValueError(f"配置文件必须是 JSON 对象：{config_path}")
     return {key: value for key, value in data.items() if key in DEFAULT_VALUES}
+
+
+def validate_user_config(path: Path | None = None) -> dict:
+    config_path = path or USER_CONFIG_PATH
+    result = {
+        "ok": True,
+        "missing_fields": [],
+        "warnings": [],
+        "config_path": config_path.as_posix(),
+    }
+    if not config_path.exists():
+        result["ok"] = False
+        result["missing_fields"] = REQUIRED_USER_CONFIG_FIELDS.copy()
+        result["warnings"].append(
+            "尚未检测到 config/user_config.json，请复制 config/user_config.example.json 并填写个人配置。"
+        )
+        return result
+
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        result["ok"] = False
+        result["warnings"].append(f"配置文件不是有效 JSON：{exc}")
+        return result
+
+    if not isinstance(data, dict):
+        result["ok"] = False
+        result["warnings"].append("配置文件必须是 JSON 对象。")
+        return result
+
+    missing = [
+        field
+        for field in REQUIRED_USER_CONFIG_FIELDS
+        if not str(data.get(field, "")).strip()
+    ]
+    result["missing_fields"] = missing
+    if missing:
+        result["ok"] = False
+        result["warnings"].append("配置文件字段缺失：" + ", ".join(missing))
+    return result
 
 
 def save_user_config(data: dict, path: Path | None = None) -> Path:
